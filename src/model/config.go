@@ -1,10 +1,15 @@
 package model
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 )
 
-const baukastenTagLocationPattern = "spec.components[name=%s].properties.tag"
+const (
+	baukastenTagLocationPattern = "spec.components[name=%s].properties.tag"
+	valuesLocation              = "%s/apps/env/%s/%s"
+)
 
 type Config struct {
 	Development               bool     `json:"development"`
@@ -51,4 +56,30 @@ func (c *Config) GetTagLocation() string {
 	}
 
 	return fmt.Sprintf(baukastenTagLocationPattern, c.Component)
+}
+
+func (c *Config) BuildAppConfigFilePath(rootPath string, env string) (string, error) {
+	if c.Component == "" {
+		return fmt.Sprintf(valuesLocation, rootPath, env, c.AppConfigFile), nil
+	}
+
+	baukastenIndicatorFile := fmt.Sprintf(valuesLocation, rootPath, env, ".baukasten")
+	appConfigFileBK, err := readFirstLine(baukastenIndicatorFile)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf(valuesLocation, rootPath, env, appConfigFileBK), nil
+}
+
+func readFirstLine(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Scan()
+	return scanner.Text(), nil
 }

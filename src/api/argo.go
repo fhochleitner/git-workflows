@@ -13,7 +13,6 @@ import (
 
 const (
 	ApplicationsetLocation = "%s/argocd/applicationset.yaml"
-	ValuesLocation         = "%s/apps/env/%s/%s"
 	TemplateLocation       = "%s/apps/env/%s"
 )
 
@@ -23,7 +22,8 @@ func UpdateArgoApplicationSet(c *model.Config, repo *git.Repository) {
 
 	wt := checkout(repo, "main", false)
 
-	filePath := fmt.Sprintf(ValuesLocation, wt.Filesystem.Root(), c.Env, c.AppConfigFile)
+	filePath, err := c.BuildAppConfigFilePath(wt.Filesystem.Root(), c.Env)
+	utils.CheckIfError(err)
 	logger.Debug("Updating file: %s", filePath)
 	updateImageTag(c, filePath)
 
@@ -68,13 +68,16 @@ func protectEnvironments(c *model.Config) {
 func UpdateAllStages(c *model.Config, wt *git.Worktree, repo *git.Repository) {
 	logger.Info("Updating all stages to new image tag to prepare deployment")
 
-	values := ParseYaml(fmt.Sprintf(ValuesLocation, wt.Filesystem.Root(), "main", c.AppConfigFile))
+	pathToYaml, err := c.BuildAppConfigFilePath(wt.Filesystem.Root(), "main")
+	utils.CheckIfError(err)
+	values := ParseYaml(pathToYaml)
 	imagetagNode, err := FindNode(values.Content[0], c.GetTagLocation())
 	utils.CheckIfError(err)
 	c.ImageTag = imagetagNode.Value
 
 	for _, stage := range c.Stages {
-		filePath := fmt.Sprintf(ValuesLocation, wt.Filesystem.Root(), stage, c.AppConfigFile)
+		filePath, err := c.BuildAppConfigFilePath(wt.Filesystem.Root(), stage)
+		utils.CheckIfError(err)
 		logger.Debug("Updating file: %s", filePath)
 		updateImageTag(c, filePath)
 	}

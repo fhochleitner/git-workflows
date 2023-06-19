@@ -1,6 +1,11 @@
 package model
 
-import "testing"
+import (
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+)
 
 type getTagLocationTest struct {
 	tagLocation, component, expected string
@@ -29,4 +34,46 @@ func setupConfig(test getTagLocationTest) Config {
 
 	conf.Component = test.component
 	return conf
+}
+
+type buildAppConfigFilePathTest struct {
+	rootPath, env, component, expectedPath string
+}
+
+var buildAppConfigFilePathTests = []buildAppConfigFilePathTest{
+	{os.TempDir(), "main", "", "/apps/env/main/values.yaml"},
+	{os.TempDir(), "main", "mega-backend-comp", "/apps/env/main/mega-backend.yaml"},
+}
+
+func TestConfig_BuildAppConfigFilePath(t *testing.T) {
+	for _, test := range buildAppConfigFilePathTests {
+		baukastenIndicatorPath := fmt.Sprintf(valuesLocation, test.rootPath, test.env, ".baukasten")
+		err := setupBuildAppConfigFilePathTest(baukastenIndicatorPath)
+		if err != nil {
+			t.Fatal("cannot create baukasten indicator file", err)
+		}
+		currentConfig := Config{AppConfigFile: "values.yaml", Component: test.component}
+		path, err := currentConfig.BuildAppConfigFilePath(test.rootPath, test.env)
+		if err != nil {
+			t.Fatal("failed to build path", err)
+		}
+		if !strings.HasSuffix(path, test.expectedPath) {
+			t.Fatalf("expected path '%s' did not match '%s'", test.expectedPath, path)
+		}
+		cleanupTest(baukastenIndicatorPath)
+	}
+}
+
+func setupBuildAppConfigFilePathTest(baukastenIndicatorPath string) error {
+	os.MkdirAll(strings.TrimSuffix(baukastenIndicatorPath, ".baukasten"), 0777)
+	err := os.WriteFile(baukastenIndicatorPath, []byte("mega-backend.yaml\n"), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func cleanupTest(baukastenIndicatorPath string) {
+	os.RemoveAll(baukastenIndicatorPath)
 }
