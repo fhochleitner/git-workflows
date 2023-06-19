@@ -69,7 +69,7 @@ func UpdateAllStages(c *model.Config, wt *git.Worktree, repo *git.Repository) {
 	logger.Info("Updating all stages to new image tag to prepare deployment")
 
 	values := ParseYaml(fmt.Sprintf(ValuesLocation, wt.Filesystem.Root(), "main", c.AppConfigFile))
-	imagetagNode, err := FindNode(values.Content[0], c.TagLocation)
+	imagetagNode, err := FindNode(values.Content[0], c.GetTagLocation())
 	utils.CheckIfError(err)
 	c.ImageTag = imagetagNode.Value
 
@@ -83,7 +83,7 @@ func UpdateAllStages(c *model.Config, wt *git.Worktree, repo *git.Repository) {
 
 func updateImageTag(c *model.Config, filepath string) {
 	nodes := ParseYaml(filepath)
-	tagNode, err := FindNode(nodes.Content[0], c.TagLocation)
+	tagNode, err := FindNode(nodes.Content[0], c.GetTagLocation())
 	utils.CheckIfError(err)
 	tagNode.Value = c.ImageTag
 	WriteYaml(nodes, filepath)

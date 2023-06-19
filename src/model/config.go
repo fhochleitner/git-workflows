@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+const baukastenTagLocationPattern = "spec.components[name=%s].properties.tag"
+
 type Config struct {
 	Development               bool     `json:"development"`
 	BaseDir                   string   `json:"base_dir"`
@@ -27,6 +29,7 @@ type Config struct {
 	Descriptor                string   `json:"descriptor"`
 	DefaultDescriptorLocation string   `json:"default_descriptor_location"`
 	CommitRef                 string   `json:"commit_ref"`
+	Component                 string   `json:"component"`
 }
 
 func (c *Config) ApplicationClonePath() string {
@@ -40,4 +43,12 @@ func (c *Config) InfrastructureClonePath() string {
 
 func (c *Config) IsPushEnabled() bool {
 	return !c.Development
+}
+
+func (c *Config) GetTagLocation() string {
+	if c.Component == "" {
+		return c.TagLocation
+	}
+
+	return fmt.Sprintf(baukastenTagLocationPattern, c.Component)
 }
